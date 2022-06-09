@@ -33,4 +33,21 @@ public class Blockchain {
         return new Blockchain(blocks);
     }
 
+
+    public boolean isVaildChain() {
+        Block preBlock;
+        Block curBlock;
+
+        for (int i = 1; i < blockList.size(); i++) {
+            curBlock = blockList.get(i);
+            preBlock = blockList.get(i - 1);
+
+            if(!preBlock.getHash().equals(curBlock.getPreHash()) ) {
+                System.out.println("Previous Hashes not equal");
+                return false;
+            }
+        }
+        return true;
+    }
+
 }
