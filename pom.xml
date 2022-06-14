@@ -50,5 +50,23 @@
             <artifactId>guava</artifactId>
             <version>24.1.1-jre</version>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.iq80.leveldb/leveldb -->
+        <dependency>
+            <groupId>org.iq80.leveldb</groupId>
+            <artifactId>leveldb</artifactId>
+            <version>0.12</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.esotericsoftware/kryo -->
+        <dependency>
+            <groupId>com.esotericsoftware</groupId>
+            <artifactId>kryo</artifactId>
+            <version>5.3.0</version>
+        </dependency>
+
+
     </dependencies>
+
+
 </project>

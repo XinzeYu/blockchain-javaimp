@@ -1,4 +1,4 @@
-package com.yxz.block;
+package com.yxz.util;
 
 import java.security.MessageDigest;
 
