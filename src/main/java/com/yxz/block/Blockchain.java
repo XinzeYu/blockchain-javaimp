@@ -1,6 +1,9 @@
 package com.yxz.block;
 
+import com.yxz.consensus.ProofOfWork;
+import com.yxz.util.LevelDBUtil;
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -9,45 +12,113 @@ import java.util.List;
 public class Blockchain {
 
     /**
-     * 区块链本质是一个块与块相连的链式结构
+     * 区块链本质是一个块与块相连的链式结构，实现持久化存储后，只记录最新一个区块链的Hash值，随后根据该hash值可以迭代整个区块链
      */
-    private List<Block> blockList;
+    private String lastBlockHash;
 
-    public Blockchain(List<Block> blockList) {
-        this.blockList = blockList;
+    public Blockchain(String lastBlockHash) {
+        this.lastBlockHash = lastBlockHash;;
     }
 
-    public void addBlock(String data) {
-        Block previousBlock = blockList.get(blockList.size() - 1);
-        this.addBlock(Block.createNewBlock(previousBlock.getHash(), data));
+    public void addBlock(String data) throws Exception {
+        String lastBlockHash = LevelDBUtil.getInstance().getLastBlockHash();
+        if (StringUtils.isBlank(lastBlockHash)) {
+            throw new Exception("Fail to add block into blockchain ! ");
+        }
+        this.addBlock(Block.createNewBlock(lastBlockHash, data));
     }
 
     public void addBlock(Block block) {
-        this.blockList.add(block);
+        LevelDBUtil.getInstance().putLastBlockHash(block.getHash());
+        LevelDBUtil.getInstance().putBlock(block);
+        this.lastBlockHash = block.getHash();
     }
 
 
     public static Blockchain newBlockchain() {
-        List<Block> blocks = new LinkedList<>();
-        blocks.add(Block.newGenesisBlock());
-        return new Blockchain(blocks);
+        String lastBlockHash = LevelDBUtil.getInstance().getLastBlockHash();
+        if (StringUtils.isBlank(lastBlockHash)) {
+            Block genesisBlock = Block.newGenesisBlock();
+            lastBlockHash = genesisBlock.getHash();
+            LevelDBUtil.getInstance().putBlock(genesisBlock);
+            LevelDBUtil.getInstance().putLastBlockHash(lastBlockHash);
+        }
+        return new Blockchain(lastBlockHash);
     }
 
+    /**
+     * 区块链迭代器
+     */
+    public class BlockchainIterator {
 
-    public boolean isVaildChain() {
-        Block preBlock;
-        Block curBlock;
+        private String currentBlockHash;
 
-        for (int i = 1; i < blockList.size(); i++) {
-            curBlock = blockList.get(i);
-            preBlock = blockList.get(i - 1);
+        public BlockchainIterator(String currentBlockHash) {
+            this.currentBlockHash = currentBlockHash;
+        }
 
-            if(!preBlock.getHash().equals(curBlock.getPreHash()) ) {
-                System.out.println("Previous Hashes not equal");
+        /**
+         * 是否有下一个区块
+         *
+         * @return
+         */
+        public boolean hashNext() throws Exception {
+            if (StringUtils.isBlank(currentBlockHash)) {
                 return false;
             }
+            Block lastBlock = LevelDBUtil.getInstance().getBlock(currentBlockHash);
+            if (lastBlock == null) {
+                return false;
+            }
+            // 创世区块直接放行
+            if (lastBlock.getPreHash().length() == 0) {
+                return true;
+            }
+            return LevelDBUtil.getInstance().getBlock(lastBlock.getPreHash()) != null;
         }
-        return true;
+
+
+        /**
+         * 返回区块
+         *
+         * @return
+         */
+        public Block next() throws Exception {
+            Block currentBlock = LevelDBUtil.getInstance().getBlock(currentBlockHash);
+            if (currentBlock != null) {
+                this.currentBlockHash = currentBlock.getPreHash();
+                return currentBlock;
+            }
+            return null;
+        }
     }
+
+    public BlockchainIterator getBlockchainIterator() {
+        return new BlockchainIterator(lastBlockHash);
+    }
+
+    public static void main(String[] args) {
+        try {
+            /*Blockchain blockchain = Blockchain.newBlockchain();
+
+            blockchain.addBlock("Send 1.0 BTC to wangwei");
+            blockchain.addBlock("Send 2.5 more BTC to wangwei");
+            blockchain.addBlock("Send 3.5 more BTC to wangwei");
+
+            for (Blockchain.BlockchainIterator iterator = blockchain.getBlockchainIterator(); iterator.hashNext(); ) {
+                Block block = iterator.next();
+
+                if (block != null) {
+                    boolean validate = ProofOfWork.newProofOfWork(block).validate();
+                    System.out.println(block.toString() + ", validate = " + validate);
+                }
+            }*/
+            System.out.println(LevelDBUtil.getInstance().getLastBlockHash());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 
 }

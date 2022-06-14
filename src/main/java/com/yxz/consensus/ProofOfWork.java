@@ -1,10 +1,8 @@
 package com.yxz.consensus;
 
 import com.yxz.block.Block;
-import com.yxz.block.Blockchain;
-import com.yxz.block.StringUtil;
+import com.yxz.util.StringUtil;
 import lombok.Data;
-import org.apache.commons.codec.digest.DigestUtils;
 
 import java.math.BigInteger;
 
@@ -82,8 +80,6 @@ public class ProofOfWork {
 
     /**
      * 准备数据
-     * <p>
-     * 注意：在准备区块数据时，一定要从原始数据类型转化为byte[]，不能直接从字符串进行转换
      *
      * @param nonce
      * @return
@@ -94,20 +90,4 @@ public class ProofOfWork {
     }
 
 
-    public static void main(String[] args) {
-        Blockchain blockchain = Blockchain.newBlockchain();
-
-        blockchain.addBlock("Send 1 BTC to Xinze");
-        blockchain.addBlock("Send 2 BTC to Zequn");
-
-        for (Block block : blockchain.getBlockList()) {
-            System.out.println("Prev.hash: " + block.getPreHash());
-            System.out.println("Data: " + block.getData());
-            System.out.println("Hash: " + block.getHash());
-            System.out.println("Nonce: " + block.getNonce());
-
-            ProofOfWork pow = ProofOfWork.newProofOfWork(block);
-            System.out.println("Pow valid: " +  pow.validate() + "\n");
-        }
-    }
 }
