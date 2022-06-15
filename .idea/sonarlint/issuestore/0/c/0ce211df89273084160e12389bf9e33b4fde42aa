@@ -1,0 +1,7 @@
+
+[	java:S112E"FDefine and throw a dedicated exception instead of using a generic one.(ßúñ–
+h	java:S112Š"FDefine and throw a dedicated exception instead of using a generic one.(ã³ùşÿÿÿÿ8ÆıŸâ”0
+r
+java:S3077!"WUse a thread-safe type; adding "volatile" is not enough to make this field thread-safe.(ïĞ÷—ùÿÿÿÿ
+`
+java:S1124!"EReorder the modifiers to comply with the Java Language Specification.(ïĞ÷—ùÿÿÿÿ
