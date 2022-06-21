@@ -20,12 +20,12 @@ public class Blockchain {
         this.lastBlockHash = lastBlockHash;;
     }
 
-    public void addBlock(String data) throws Exception {
+    public void mineBlock(Transaction[] transactions) throws Exception {
         String lastBlockHash = LevelDBUtil.getInstance().getLastBlockHash();
         if (StringUtils.isBlank(lastBlockHash)) {
             throw new Exception("Fail to add block into blockchain ! ");
         }
-        this.addBlock(Block.createNewBlock(lastBlockHash, data));
+        this.addBlock(Block.createNewBlock(lastBlockHash, transactions));
     }
 
     public void addBlock(Block block) {
@@ -115,6 +115,13 @@ public class Blockchain {
             }*/
             System.out.println(LevelDBUtil.getInstance().getLastBlockHash());
 
+            Transaction transaction = Transaction.newTransaction("yxz", "yzq", 5, blockchain);
+            blockchain.mineBlock(new Transaction[]{transaction});
+            System.out.println("Success!");
+
+            blockchain.getBalance("yzq");
+            blockchain.getBalance("yxz");
+            LevelDBUtil.getInstance().closeDB();
         } catch (Exception e) {
             e.printStackTrace();
         }
