@@ -43,7 +43,7 @@ public class Cli {
             CommandLine cmd = parser.parse(options, args);
             switch (args[0]) {
                 case "printchain":
-                    this.printChain();
+                    //this.printChain();
                     break;
                 case "h":
                     this.help();
@@ -86,8 +86,9 @@ public class Cli {
     /**
      * 打印出区块链中的所有区块
      */
-    private void printChain() throws Exception {
-        Blockchain blockchain = Blockchain.newBlockchain();
+    /*private void printChain() throws Exception {
+
+        //Blockchain blockchain = ;
         for (Blockchain.BlockchainIterator iterator = blockchain.getBlockchainIterator(); iterator.hashNext(); ) {
             Block block = iterator.next();
             if (block != null) {
@@ -95,6 +96,6 @@ public class Cli {
                 System.out.println(block.toString() + ", validate = " + validate);
             }
         }
-    }
+    }*/
 
 }
