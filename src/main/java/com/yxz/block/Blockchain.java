@@ -5,16 +5,16 @@ import com.yxz.transaction.SpendableTXOutput;
 import com.yxz.transaction.TXInput;
 import com.yxz.transaction.TXOutput;
 import com.yxz.transaction.Transaction;
+import com.yxz.util.Base58Util;
 import com.yxz.util.LevelDBUtil;
+import com.yxz.util.WalletUtil;
+import com.yxz.wallet.Wallet;
 import lombok.Data;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Data
 public class Blockchain {
@@ -112,11 +112,11 @@ public class Blockchain {
     /**
      * 从交易输入中查询区块链中所有已被花费了的交易输出，即被交易输入所指向的所有交易输出
      *
-     * @param address 地址
+     * @param
      * @return 交易ID以及对应的交易输出下标地址
      * @throws Exception
      */
-    private Map<String, int[]> getAllSpentTXOs(String address) throws Exception {
+    private Map<String, int[]> getAllSpentTXOs(byte[] publicKeyHash) throws Exception {
 
         Map<String, int[]> spentTXOs = new HashMap<>();
         for (BlockchainIterator blockchainIterator = this.getBlockchainIterator(); blockchainIterator.hashNext(); ) {
@@ -129,7 +129,7 @@ public class Blockchain {
                 }
                 for (TXInput txInput : transaction.getInputs()) {
                     // 判断能否被该地址解锁
-                    if (txInput.canUnlockOutputWith(address)) {
+                    if (txInput.canUnlockOutputWithKey(publicKeyHash)) {
                         //byte[]转为String
                         String inTxId = Hex.encodeHexString(txInput.getTxId());
 
@@ -150,13 +150,13 @@ public class Blockchain {
     /**
      * 查找钱包地址对应的所有未花费的交易，遍历所有交易，排除被花费的交易输出
      *
-     * @param address 地址
+     * @param
      * @return
      * @throws Exception
      */
-    private Transaction[] findUnspentTransactions(String address) throws Exception {
+    private Transaction[] findUnspentTransactions(byte[] publicKeyHash) throws Exception {
         // 获取地址对应所有已被花费了的交易输出，即被交易输入所指向的所有交易输出
-        Map<String, int[]> allSpentTXOs = this.getAllSpentTXOs(address);
+        Map<String, int[]> allSpentTXOs = this.getAllSpentTXOs(publicKeyHash);
         Transaction[] unspentTxs = {};
 
         // 再次遍历所有区块中的交易输出
@@ -173,7 +173,7 @@ public class Blockchain {
                         continue;
                     }
                     // 保存不存在 allSpentTXOs 中的交易
-                    if (transaction.getOutputs()[i].canBeUnlockedWith(address)) {
+                    if (transaction.getOutputs()[i].canBeUnlockedWithKey(publicKeyHash)) {
                         unspentTxs = ArrayUtils.add(unspentTxs, transaction);
                     }
                 }
@@ -185,18 +185,18 @@ public class Blockchain {
     /**
      * 查找钱包地址对应的所有UTXO，未花费 意味着这些交易输出从未被交易输入所指向
      *
-     * @param address 钱包地址
+     * @param
      * @return
      */
-    public TXOutput[] findUTXO(String address) throws Exception {
-        Transaction[] unspentTxs = this.findUnspentTransactions(address);
+    public TXOutput[] findUTXO(byte[] publicKeyHash) throws Exception {
+        Transaction[] unspentTxs = this.findUnspentTransactions(publicKeyHash);
         TXOutput[] utxos = {};
         if (unspentTxs == null || unspentTxs.length == 0) {
             return utxos;
         }
         for (Transaction tx : unspentTxs) {
             for (TXOutput txOutput : tx.getOutputs()) {
-                if (txOutput.canBeUnlockedWith(address)) {
+                if (txOutput.canBeUnlockedWithKey(publicKeyHash)) {
                     utxos = ArrayUtils.add(utxos, txOutput);
                 }
             }
@@ -207,11 +207,22 @@ public class Blockchain {
     /**
      * 查询钱包余额，需要回顾所有的UTXO并且相加
      *
-     * @param address 钱包地址
+     * @param
      */
     private void getBalance(String address) throws Exception {
+        // 检查钱包地址是否合法
+        try {
+            Base58Util.base58ToBytes(address);
+        } catch (Exception e) {
+            System.out.println("ERROR: invalid wallet address");
+            throw new RuntimeException("ERROR: invalid wallet address", e);
+        }
+        // 得到公钥Hash值
+        byte[] versionedPayload = Base58Util.base58ToBytes(address);
+        byte[] publicKeyHash = Arrays.copyOfRange(versionedPayload, 1, versionedPayload.length);
+
         Blockchain blockchain = Blockchain.newBlockchain(address);
-        TXOutput[] txOutputs = blockchain.findUTXO(address);
+        TXOutput[] txOutputs = blockchain.findUTXO(publicKeyHash);
         int balance = 0;
         if (txOutputs != null && txOutputs.length > 0) {
             for (TXOutput txOutput : txOutputs) {
@@ -224,14 +235,14 @@ public class Blockchain {
     /**
      * 寻找地址对应的能够花费的交易
      *
-     * @param address
+     * @param publicKeyHash
      * @param amount
      * @return
      * @throws Exception
      */
-    public SpendableTXOutput findSpendableTXOutputs(String address, int amount) throws Exception {
+    public SpendableTXOutput findSpendableTXOutputs(byte[] publicKeyHash, int amount) throws Exception {
         //首先找到所有未花费的交易
-        Transaction[] unspentTXs = this.findUnspentTransactions(address);
+        Transaction[] unspentTXs = this.findUnspentTransactions(publicKeyHash);
         int total = 0;
         Map<String, int[]> unspentTXOs = new HashMap<>();
         for (Transaction tx : unspentTXs) {
@@ -240,7 +251,7 @@ public class Blockchain {
             for (int i = 0; i < tx.getOutputs().length; i++) {
                 TXOutput txOutput = tx.getOutputs()[i];
                 //寻找能被地址解锁的交易输出，并且综合小于金额
-                if (txOutput.canBeUnlockedWith(address) && total < amount) {
+                if (txOutput.canBeUnlockedWithKey(publicKeyHash) && total < amount) {
                     total += txOutput.getValue();
 
                     int[] outIds = unspentTXOs.get(txId);
@@ -262,16 +273,33 @@ public class Blockchain {
 
     public static void main(String[] args) {
         try {
-            Blockchain blockchain = Blockchain.newBlockchain("yxz");
-            blockchain.getBalance("yxz");
-            System.out.println(LevelDBUtil.getInstance().getLastBlockHash());
+            /*Wallet wallet = WalletUtil.getInstance().createWallet();
+            System.out.println("wallet address : " + wallet.getBTCAddress());
+            Wallet wallet1 = WalletUtil.getInstance().createWallet();
+            System.out.println("wallet address : " + wallet1.getBTCAddress());
+            Wallet wallet2 = WalletUtil.getInstance().createWallet();
+            System.out.println("wallet address : " + wallet2.getBTCAddress());*/
+            Blockchain blockchain = Blockchain.newBlockchain("1GvsHC3QAogGVS52QAabz8W8M5UVJsfgAe");
 
-            Transaction transaction = Transaction.newTransaction("yxz", "yzq", 5, blockchain);
-            blockchain.mineBlock(new Transaction[]{transaction});
-            System.out.println("Success!");
+            /*wallet address : 1GvsHC3QAogGVS52QAabz8W8M5UVJsfgAe
+            wallet address : 16VvVLZh4PLFV1cBWunRw2cmVmwA28RTE6
+            wallet address : 1JpHt562Y5Gg2iZpqAwzaBSYc5hYNpJrYd*/
 
-            blockchain.getBalance("yzq");
-            blockchain.getBalance("yxz");
+            //Blockchain blockchain = Blockchain.newBlockchain("yxz");
+            //blockchain.getBalance("12LwyV25ooWb8AmQJYqGH4i1t2LGEgPJZE");
+            //System.out.println(WalletUtil.getInstance().getWallet("1F3M2pwAGaBLWxw7wzKVqmqHqEZnB9yv6V"));
+            //System.out.println(LevelDBUtil.getInstance().getLastBlockHash());
+
+            /*Transaction transaction = Transaction.newTransaction("1GvsHC3QAogGVS52QAabz8W8M5UVJsfgAe", "16VvVLZh4PLFV1cBWunRw2cmVmwA28RTE6", 5, blockchain);
+            blockchain.mineBlock(new Transaction[]{transaction});*/
+
+            Transaction transaction1 = Transaction.newTransaction("1GvsHC3QAogGVS52QAabz8W8M5UVJsfgAe", "1JpHt562Y5Gg2iZpqAwzaBSYc5hYNpJrYd", 4, blockchain);
+            blockchain.mineBlock(new Transaction[]{transaction1});
+            //System.out.println("Success!");
+
+            blockchain.getBalance("1GvsHC3QAogGVS52QAabz8W8M5UVJsfgAe");
+            blockchain.getBalance("16VvVLZh4PLFV1cBWunRw2cmVmwA28RTE6");
+            blockchain.getBalance("1JpHt562Y5Gg2iZpqAwzaBSYc5hYNpJrYd");
             LevelDBUtil.getInstance().closeDB();
         } catch (Exception e) {
             e.printStackTrace();

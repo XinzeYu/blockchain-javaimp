@@ -12,6 +12,7 @@ import org.bouncycastle.jce.spec.ECParameterSpec;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.security.*;
 
 
@@ -29,7 +30,10 @@ import java.security.*;
  */
 @Data
 @AllArgsConstructor
-public class Wallet {
+public class Wallet implements Serializable {
+
+    private static final long serialVersionUID = 166249065006236265L;
+
     // 校验码长度
     private static final int ADDRESS_CHECKSUM_LEN = 4;
     /**

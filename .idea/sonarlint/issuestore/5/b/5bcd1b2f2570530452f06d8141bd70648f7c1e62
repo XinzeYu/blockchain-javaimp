@@ -1,0 +1,22 @@
+
+Y
+java:S1854+"7Remove this useless assignment to local variable "cmd".(–ÿŞÁûÿÿÿÿ8ŒÅÑ©˜0
+J
+java:S1481+"(Remove this unused "cmd" local variable.(–ÿŞÁûÿÿÿÿ8ÅÑ©˜0
+]	java:S125."<This block of commented-out lines of code should be removed.(¡…¾‰şÿÿÿÿ8ÅÑ©˜0
+E	java:S1086")Either remove or fill this block of code.(”ı¾8ŸÅÑ©˜0
+E	java:S1088")Either remove or fill this block of code.(Úîø›8ŸÅÑ©˜0
+Z	java:S106L"9Replace this use of System.out or System.err by a logger.(ú¾ıÿÿÿÿ8 ÅÑ©˜0
+Z	java:S106M"9Replace this use of System.out or System.err by a logger.(†ÂĞ¨úÿÿÿÿ8 ÅÑ©˜0
+U	java:S106N"9Replace this use of System.out or System.err by a logger.(˜¢ÄÕ8¡ÅÑ©˜0
+Z	java:S106O"9Replace this use of System.out or System.err by a logger.(›Í¶Øúÿÿÿÿ8¡ÅÑ©˜0
+Z	java:S106P"9Replace this use of System.out or System.err by a logger.(ıŠä¬ûÿÿÿÿ8¡ÅÑ©˜0
+U	java:S106Q"9Replace this use of System.out or System.err by a logger.(¿¬·Ä8¡ÅÑ©˜0
+Z	java:S106R"9Replace this use of System.out or System.err by a logger.(³á­øÿÿÿÿ8¡ÅÑ©˜0
+]	java:S125Y"<This block of commented-out lines of code should be removed.(ÅÈŸÅøÿÿÿÿ8¢ÅÑ©˜0
+M
+java:S1128"0Remove this unused import 'com.yxz.block.Block'.(°Åÿà8¢ÅÑ©˜0
+R
+java:S1128"5Remove this unused import 'com.yxz.block.Blockchain'.(àËª8¢ÅÑ©˜0
+W
+java:S1128":Remove this unused import 'com.yxz.consensus.ProofOfWork'.( ±8¢ÅÑ©˜0

@@ -1,7 +1,10 @@
 package com.yxz.transaction;
 
 import com.yxz.block.Blockchain;
+import com.yxz.util.AddressUtil;
 import com.yxz.util.SerializeUtil;
+import com.yxz.util.WalletUtil;
+import com.yxz.wallet.Wallet;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,6 +13,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -72,10 +76,10 @@ public class Transaction {
             data = String.format("Reward to '%s'", to);
         }
         // 创建交易输入
-        TXInput txInput = new TXInput(new byte[]{}, -1, data);
+        TXInput txInput = new TXInput(new byte[]{}, -1, null, data.getBytes());
 
         // 创建交易输出，提供一笔激励
-        TXOutput txOutput = new TXOutput(bonus, to);
+        TXOutput txOutput = TXOutput.newTXOutput(bonus, to);
 
         // 创建交易
         Transaction tx = new Transaction(null, new TXInput[]{txInput}, new TXOutput[]{txOutput});
@@ -98,8 +102,13 @@ public class Transaction {
 
 
     public static Transaction newTransaction (String from, String to, int amount, Blockchain blockchain) throws Exception {
+        //获取钱包
+        Wallet senderWallet = WalletUtil.getInstance().getWallet(from);
+        byte[] publicKey = senderWallet.getPublicKey();
+        byte[] publicKeyHash = AddressUtil.ripeMD160Hash(publicKey);
+
         //需要发款方寻找能够花费的交易
-        SpendableTXOutput spendableTXOutputs = blockchain.findSpendableTXOutputs(from, amount);
+        SpendableTXOutput spendableTXOutputs = blockchain.findSpendableTXOutputs(publicKeyHash, amount);
         int total = spendableTXOutputs.getTotal();
         Map<String, int[]> unspentTXOs = spendableTXOutputs.getUnspentTXOs();
         //余额不足
@@ -117,7 +126,7 @@ public class Transaction {
             int[] outIdxs = entry.getValue();
             byte[] txId = Hex.decodeHex(txIdStr);
             for (int outIndex : outIdxs) {
-                txInputs = ArrayUtils.add(txInputs, new TXInput(txId, outIndex, from));
+                txInputs = ArrayUtils.add(txInputs, new TXInput(txId, outIndex, null, publicKey));
             }
         }
 
@@ -125,10 +134,10 @@ public class Transaction {
         //一个 output 用于锁定到收款的钱包地址上，是真正转账的金额；
         //另一个则用于给自己找零
         TXOutput[] txOutput = {};
-        txOutput = ArrayUtils.add(txOutput, new TXOutput(amount, to));
+        txOutput = ArrayUtils.add(txOutput, TXOutput.newTXOutput(amount, to));
         //给自己找零
         if (total > amount) {
-            txOutput = ArrayUtils.add(txOutput, new TXOutput((total - amount), from));
+            txOutput = ArrayUtils.add(txOutput, TXOutput.newTXOutput((total - amount), from));
         }
 
         Transaction tx = new Transaction(null, txInputs, txOutput);

@@ -1,8 +1,11 @@
 package com.yxz.transaction;
 
+import com.yxz.util.Base58Util;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.Arrays;
 
 
 /**
@@ -20,18 +23,33 @@ public class TXOutput {
     private int value;
 
     /**
-     * 锁定脚本，会存储任意的字符串（用户定义的钱包地址）
+     * 公钥Hash
      */
-    private String scriptPubKey;
+    private byte[] publicKeyHash;
 
 
     /**
-     * 判断解锁数据是否能够解锁交易输出
+     * 创建交易输出
      *
-     * @param unlockingData
+     * @param value
+     * @param address
      * @return
      */
-    public boolean canBeUnlockedWith(String unlockingData) {
-        return this.getScriptPubKey().endsWith(unlockingData);
+    public static TXOutput newTXOutput(int value, String address) {
+        // 反向转化为 byte 数组
+        byte[] versionedPayload = Base58Util.base58ToBytes(address);
+        byte[] pubKeyHash = Arrays.copyOfRange(versionedPayload, 1, versionedPayload.length);
+        return new TXOutput(value, pubKeyHash);
+    }
+
+
+    /**
+     * 检查提供的公钥 Hash 是否能够用于解锁交易输出
+     *
+     * @param
+     * @return
+     */
+    public boolean canBeUnlockedWithKey(byte[] publicKeyHash) {
+        return Arrays.equals(this.getPublicKeyHash(), publicKeyHash);
     }
 }
