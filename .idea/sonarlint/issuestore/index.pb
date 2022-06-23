@@ -23,3 +23,7 @@ R
 0src/main/java/com/yxz/consensus/ProofOfWork.java,2\2\22f63fcf48a05f58ae6a06705d77441515507fa0
 h
 8src/main/java/com/yxz/transaction/SpendableTXOutput.java,e\e\ee5c5131bc35f916be005374d5cf4e45bf1e6360
+[
++src/main/java/com/yxz/util/AddressUtil.java,9\4\94c743421e981be35eff683b2d0a2d7c44aacfc5
+]
+-src/main/java/com/yxz/util/SerializeUtil.java,7\9\7939d974504652a372763db8742a4cfc3464d363

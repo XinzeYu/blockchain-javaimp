@@ -13,6 +13,7 @@ import lombok.Data;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 
 import java.util.*;
 
@@ -29,6 +30,13 @@ public class Blockchain {
     }
 
     public void mineBlock(Transaction[] transactions) throws Exception {
+        //挖掘区块前，需要先验证交易记录
+        for (Transaction tx : transactions) {
+            if (!this.verifyTransactions(tx)) {
+                System.out.println("ERROR: Fail to mine block ! Invalid transaction ! tx=" + tx.toString());
+                throw new RuntimeException("ERROR: Fail to mine block ! Invalid transaction ! ");
+            }
+        }
         String lastBlockHash = LevelDBUtil.getInstance().getLastBlockHash();
         if (StringUtils.isBlank(lastBlockHash)) {
             throw new Exception("Fail to add block into blockchain ! ");
@@ -271,6 +279,61 @@ public class Blockchain {
         return new SpendableTXOutput(total, unspentTXOs);
     }
 
+
+    /**
+     * 依据交易ID查询交易信息
+     *
+     * @param txId 交易ID
+     * @return
+     */
+    private Transaction findTransaction(byte[] txId) throws Exception {
+        for (BlockchainIterator iterator = this.getBlockchainIterator(); iterator.hashNext(); ) {
+            Block block = iterator.next();
+            for (Transaction tx : block.getTransactions()) {
+                if (Arrays.equals(tx.getTxId(), txId)) {
+                    return tx;
+                }
+            }
+        }
+        throw new Exception("ERROR: Can not found tx by txId ! ");
+    }
+
+    /**
+     * 进行交易签名
+     *
+     * @param tx         交易数据
+     * @param privateKey 私钥
+     */
+    public void signTransaction(Transaction tx, BCECPrivateKey privateKey) throws Exception {
+        //先找到这笔新的交易中，交易输入所引用的前面的多笔交易的数据
+        Map<String, Transaction> prevTxMap = new HashMap<>();
+        for (TXInput txInput : tx.getInputs()) {
+            Transaction prevTx = this.findTransaction(txInput.getTxId());
+            prevTxMap.put(Hex.encodeHexString(txInput.getTxId()), prevTx);
+        }
+        tx.sign(privateKey, prevTxMap);
+    }
+
+    /**
+     * 交易签名验证
+     *
+     * @param tx
+     */
+    private boolean verifyTransactions(Transaction tx) throws Exception {
+        Map<String, Transaction> prevTx = new HashMap<>();
+        for (TXInput txInput : tx.getInputs()) {
+            Transaction transaction = this.findTransaction(txInput.getTxId());
+            prevTx.put(Hex.encodeHexString(txInput.getTxId()), transaction);
+        }
+        try {
+            return tx.verify(prevTx);
+        } catch (Exception e) {
+            System.out.println("Fail to verify transaction ! transaction invalid ! ");
+            throw new RuntimeException("Fail to verify transaction ! transaction invalid ! ", e);
+        }
+    }
+
+
     public static void main(String[] args) {
         try {
             /*Wallet wallet = WalletUtil.getInstance().createWallet();
@@ -281,6 +344,7 @@ public class Blockchain {
             System.out.println("wallet address : " + wallet2.getBTCAddress());*/
             Blockchain blockchain = Blockchain.newBlockchain("1GvsHC3QAogGVS52QAabz8W8M5UVJsfgAe");
 
+            //用于测试的钱包地址信息
             /*wallet address : 1GvsHC3QAogGVS52QAabz8W8M5UVJsfgAe
             wallet address : 16VvVLZh4PLFV1cBWunRw2cmVmwA28RTE6
             wallet address : 1JpHt562Y5Gg2iZpqAwzaBSYc5hYNpJrYd*/
@@ -293,8 +357,8 @@ public class Blockchain {
             /*Transaction transaction = Transaction.newTransaction("1GvsHC3QAogGVS52QAabz8W8M5UVJsfgAe", "16VvVLZh4PLFV1cBWunRw2cmVmwA28RTE6", 5, blockchain);
             blockchain.mineBlock(new Transaction[]{transaction});*/
 
-            Transaction transaction1 = Transaction.newTransaction("1GvsHC3QAogGVS52QAabz8W8M5UVJsfgAe", "1JpHt562Y5Gg2iZpqAwzaBSYc5hYNpJrYd", 4, blockchain);
-            blockchain.mineBlock(new Transaction[]{transaction1});
+            Transaction transaction = Transaction.newTransaction("1JpHt562Y5Gg2iZpqAwzaBSYc5hYNpJrYd", "16VvVLZh4PLFV1cBWunRw2cmVmwA28RTE6", 3, blockchain);
+            blockchain.mineBlock(new Transaction[]{transaction});
             //System.out.println("Success!");
 
             blockchain.getBalance("1GvsHC3QAogGVS52QAabz8W8M5UVJsfgAe");

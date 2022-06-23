@@ -36,12 +36,15 @@ public class Wallet implements Serializable {
 
     // 校验码长度
     private static final int ADDRESS_CHECKSUM_LEN = 4;
+
+
     /**
      * 私钥
      */
     private BCECPrivateKey privateKey;
+
     /**
-     * 公钥
+     * 公钥，比特币的公钥实际上是以椭圆曲线的点对（x,y）的格式存储的
      */
     private byte[] publicKey;
 
