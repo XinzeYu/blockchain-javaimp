@@ -12,6 +12,9 @@ import java.util.List;
 
 /**
  * 实现默克尔树数据结构，将一个区块的交易信息的表示成一个唯一的根hash
+ * Merkle 树的好处是节点可以在不下载整个块的情况下验证某笔交易的合法性:只需要交易 Hash，Merkle根Hash和Merkle路径。
+ * 如何验证交易？
+ * 如果可以根据交易的hash和验证路径计算出的merkle root与获取到的merkle root一致，则说明该笔交易确实存在于区块中
  *
  *
  */
