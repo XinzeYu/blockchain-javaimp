@@ -1,10 +1,8 @@
 package com.yxz.block;
 
+import com.google.common.collect.Maps;
 import com.yxz.consensus.ProofOfWork;
-import com.yxz.transaction.SpendableTXOutput;
-import com.yxz.transaction.TXInput;
-import com.yxz.transaction.TXOutput;
-import com.yxz.transaction.Transaction;
+import com.yxz.transaction.*;
 import com.yxz.util.Base58Util;
 import com.yxz.util.LevelDBUtil;
 import com.yxz.util.WalletUtil;
@@ -29,7 +27,7 @@ public class Blockchain {
         this.lastBlockHash = lastBlockHash;;
     }
 
-    public void mineBlock(Transaction[] transactions) throws Exception {
+    public Block mineBlock(Transaction[] transactions) throws Exception {
         //挖掘区块前，需要先验证交易记录
         for (Transaction tx : transactions) {
             if (!this.verifyTransactions(tx)) {
@@ -41,7 +39,9 @@ public class Blockchain {
         if (StringUtils.isBlank(lastBlockHash)) {
             throw new Exception("Fail to add block into blockchain ! ");
         }
-        this.addBlock(Block.createNewBlock(lastBlockHash, transactions));
+        Block block = Block.createNewBlock(lastBlockHash, transactions);
+        this.addBlock(block);
+        return block;
     }
 
     public void addBlock(Block block) {
@@ -118,13 +118,13 @@ public class Blockchain {
 
 
     /**
-     * 从交易输入中查询区块链中所有已被花费了的交易输出，即被交易输入所指向的所有交易输出
+     * 从交易输入中查询区块链中某地址花费了的交易输出，即被交易输入所指向的所有交易输出
      *
      * @param
      * @return 交易ID以及对应的交易输出下标地址
      * @throws Exception
      */
-    private Map<String, int[]> getAllSpentTXOs(byte[] publicKeyHash) throws Exception {
+    /*private Map<String, int[]> getAllSpentTXOs(byte[] publicKeyHash) throws Exception {
 
         Map<String, int[]> spentTXOs = new HashMap<>();
         for (BlockchainIterator blockchainIterator = this.getBlockchainIterator(); blockchainIterator.hashNext(); ) {
@@ -153,6 +153,37 @@ public class Blockchain {
             }
         }
         return spentTXOs;
+    }*/
+
+    /**
+     * 从交易输入中查询区块链中所有已被花费了的交易输出
+     *
+     * @return 交易ID以及对应的交易输出下标地址
+     */
+    private Map<String, int[]> getAllSpentTXOs() throws Exception {
+
+        Map<String, int[]> spentTXOs = Maps.newHashMap();
+        for (BlockchainIterator blockchainIterator = this.getBlockchainIterator(); blockchainIterator.hashNext(); ) {
+            Block block = blockchainIterator.next();
+
+            for (Transaction transaction : block.getTransactions()) {
+                // 如果是 coinbase 交易，直接跳过，因为它不存在引用前一个区块的交易输出
+                if (transaction.isCoinbase()) {
+                    continue;
+                }
+                for (TXInput txInput : transaction.getInputs()) {
+                    String inTxId = Hex.encodeHexString(txInput.getTxId());
+                    int[] spentOutIndexArray = spentTXOs.get(inTxId);
+                    if (spentOutIndexArray == null) {
+                        spentOutIndexArray = new int[]{txInput.getTxOutputIndex()};
+                    } else {
+                        spentOutIndexArray = ArrayUtils.add(spentOutIndexArray, txInput.getTxOutputIndex());
+                    }
+                    spentTXOs.put(inTxId, spentOutIndexArray);
+                }
+            }
+        }
+        return spentTXOs;
     }
 
     /**
@@ -162,7 +193,7 @@ public class Blockchain {
      * @return
      * @throws Exception
      */
-    private Transaction[] findUnspentTransactions(byte[] publicKeyHash) throws Exception {
+    /*private Transaction[] findUnspentTransactions(byte[] publicKeyHash) throws Exception {
         // 获取地址对应所有已被花费了的交易输出，即被交易输入所指向的所有交易输出
         Map<String, int[]> allSpentTXOs = this.getAllSpentTXOs(publicKeyHash);
         Transaction[] unspentTxs = {};
@@ -188,7 +219,7 @@ public class Blockchain {
             }
         }
         return unspentTxs;
-    }
+    }*/
 
     /**
      * 查找钱包地址对应的所有UTXO，未花费 意味着这些交易输出从未被交易输入所指向
@@ -196,7 +227,7 @@ public class Blockchain {
      * @param
      * @return
      */
-    public TXOutput[] findUTXO(byte[] publicKeyHash) throws Exception {
+    /*public TXOutput[] findUTXO(byte[] publicKeyHash) throws Exception {
         Transaction[] unspentTxs = this.findUnspentTransactions(publicKeyHash);
         TXOutput[] utxos = {};
         if (unspentTxs == null || unspentTxs.length == 0) {
@@ -210,7 +241,44 @@ public class Blockchain {
             }
         }
         return utxos;
+    }*/
+
+    /**
+     * 查找整个区块链中所有的UTXO，保存到UTXO池中
+     *
+     * @return
+     */
+    public Map<String, TXOutput[]> findAllUTXOs() throws Exception {
+        Map<String, int[]> allSpentTXOs = this.getAllSpentTXOs();
+        Map<String, TXOutput[]> allUTXOs = Maps.newHashMap();
+        // 再次遍历所有区块中的交易输出
+        for (BlockchainIterator blockchainIterator = this.getBlockchainIterator(); blockchainIterator.hashNext(); ) {
+            Block block = blockchainIterator.next();
+            for (Transaction transaction : block.getTransactions()) {
+
+                String txId = Hex.encodeHexString(transaction.getTxId());
+
+                int[] spentOutIndexArray = allSpentTXOs.get(txId);
+                TXOutput[] txOutputs = transaction.getOutputs();
+                for (int outIndex = 0; outIndex < txOutputs.length; outIndex++) {
+                    if (spentOutIndexArray != null && ArrayUtils.contains(spentOutIndexArray, outIndex)) {
+                        continue;
+                    }
+                    TXOutput[] UTXOArray = allUTXOs.get(txId);
+                    if (UTXOArray == null) {
+                        UTXOArray = new TXOutput[]{txOutputs[outIndex]};
+                    } else {
+                        UTXOArray = ArrayUtils.add(UTXOArray, txOutputs[outIndex]);
+                    }
+                    allUTXOs.put(txId, UTXOArray);
+                }
+            }
+        }
+        return allUTXOs;
     }
+
+
+
 
     /**
      * 查询钱包余额，需要回顾所有的UTXO并且相加
@@ -230,7 +298,8 @@ public class Blockchain {
         byte[] publicKeyHash = Arrays.copyOfRange(versionedPayload, 1, versionedPayload.length);
 
         Blockchain blockchain = Blockchain.newBlockchain(address);
-        TXOutput[] txOutputs = blockchain.findUTXO(publicKeyHash);
+        UTXOSet utxoSet = new UTXOSet(blockchain);
+        TXOutput[] txOutputs = utxoSet.findUTXO(publicKeyHash);
         int balance = 0;
         if (txOutputs != null && txOutputs.length > 0) {
             for (TXOutput txOutput : txOutputs) {
@@ -248,7 +317,7 @@ public class Blockchain {
      * @return
      * @throws Exception
      */
-    public SpendableTXOutput findSpendableTXOutputs(byte[] publicKeyHash, int amount) throws Exception {
+    /*public SpendableTXOutput findSpendableTXOutputs(byte[] publicKeyHash, int amount) throws Exception {
         //首先找到所有未花费的交易
         Transaction[] unspentTXs = this.findUnspentTransactions(publicKeyHash);
         int total = 0;
@@ -277,7 +346,7 @@ public class Blockchain {
             }
         }
         return new SpendableTXOutput(total, unspentTXOs);
-    }
+    }*/
 
 
     /**
@@ -343,6 +412,8 @@ public class Blockchain {
             Wallet wallet2 = WalletUtil.getInstance().createWallet();
             System.out.println("wallet address : " + wallet2.getBTCAddress());*/
             Blockchain blockchain = Blockchain.newBlockchain("1GvsHC3QAogGVS52QAabz8W8M5UVJsfgAe");
+            UTXOSet utxoSet = new UTXOSet(blockchain);
+            //utxoSet.reset();
 
             //用于测试的钱包地址信息
             /*wallet address : 1GvsHC3QAogGVS52QAabz8W8M5UVJsfgAe
@@ -357,8 +428,13 @@ public class Blockchain {
             /*Transaction transaction = Transaction.newTransaction("1GvsHC3QAogGVS52QAabz8W8M5UVJsfgAe", "16VvVLZh4PLFV1cBWunRw2cmVmwA28RTE6", 5, blockchain);
             blockchain.mineBlock(new Transaction[]{transaction});*/
 
-            Transaction transaction = Transaction.newTransaction("1JpHt562Y5Gg2iZpqAwzaBSYc5hYNpJrYd", "16VvVLZh4PLFV1cBWunRw2cmVmwA28RTE6", 1, blockchain);
-            blockchain.mineBlock(new Transaction[]{transaction});
+            Transaction transaction = Transaction.newTransaction("1GvsHC3QAogGVS52QAabz8W8M5UVJsfgAe", "16VvVLZh4PLFV1cBWunRw2cmVmwA28RTE6", 1, blockchain);
+            Block newBlock = blockchain.mineBlock(new Transaction[]{transaction});
+            utxoSet.update(newBlock);
+
+            Transaction transaction1 = Transaction.newTransaction("1GvsHC3QAogGVS52QAabz8W8M5UVJsfgAe", "1JpHt562Y5Gg2iZpqAwzaBSYc5hYNpJrYd", 6, blockchain);
+            Block newBlock1 = blockchain.mineBlock(new Transaction[]{transaction1});
+            utxoSet.update(newBlock1);
             //System.out.println("Success!");
 
             blockchain.getBalance("1GvsHC3QAogGVS52QAabz8W8M5UVJsfgAe");

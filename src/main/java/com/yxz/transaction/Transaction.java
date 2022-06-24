@@ -139,7 +139,7 @@ public class Transaction {
         byte[] publicKeyHash = AddressUtil.ripeMD160Hash(publicKey);
 
         //需要发款方寻找能够花费的交易
-        SpendableTXOutput spendableTXOutputs = blockchain.findSpendableTXOutputs(publicKeyHash, amount);
+        SpendableTXOutput spendableTXOutputs = new UTXOSet(blockchain).findSpendableTXOutputs(publicKeyHash, amount);
         int total = spendableTXOutputs.getTotal();
         Map<String, int[]> unspentTXOs = spendableTXOutputs.getUnspentTXOs();
 
