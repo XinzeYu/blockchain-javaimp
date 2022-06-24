@@ -357,7 +357,7 @@ public class Blockchain {
             /*Transaction transaction = Transaction.newTransaction("1GvsHC3QAogGVS52QAabz8W8M5UVJsfgAe", "16VvVLZh4PLFV1cBWunRw2cmVmwA28RTE6", 5, blockchain);
             blockchain.mineBlock(new Transaction[]{transaction});*/
 
-            Transaction transaction = Transaction.newTransaction("1JpHt562Y5Gg2iZpqAwzaBSYc5hYNpJrYd", "16VvVLZh4PLFV1cBWunRw2cmVmwA28RTE6", 3, blockchain);
+            Transaction transaction = Transaction.newTransaction("1JpHt562Y5Gg2iZpqAwzaBSYc5hYNpJrYd", "16VvVLZh4PLFV1cBWunRw2cmVmwA28RTE6", 1, blockchain);
             blockchain.mineBlock(new Transaction[]{transaction});
             //System.out.println("Success!");
 

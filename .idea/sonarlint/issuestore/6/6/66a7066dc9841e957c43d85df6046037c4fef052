@@ -1,0 +1,33 @@
+
+[	java:S112v"FDefine and throw a dedicated exception instead of using a generic one.(Õ…öû
+a	java:S112†"FDefine and throw a dedicated exception instead of using a generic one.(¼Û¼ñúÿÿÿÿ
+\	java:S112¤"FDefine and throw a dedicated exception instead of using a generic one.(Š‚˜
+\	java:S112¾"FDefine and throw a dedicated exception instead of using a generic one.(§…½Ê
+a	java:S112Ê"FDefine and throw a dedicated exception instead of using a generic one.(ªºÀÔùÿÿÿÿ
+a	java:S112Û"FDefine and throw a dedicated exception instead of using a generic one.(õÛÂıÿÿÿÿ
+a	java:S112à"FDefine and throw a dedicated exception instead of using a generic one.(õÛÂıÿÿÿÿ
+r
+java:S3077"WUse a thread-safe type; adding "volatile" is not enough to make this field thread-safe.(á­’„üÿÿÿÿ
+`
+java:S1124"EReorder the modifiers to comply with the Java Language Specification.(á­’„üÿÿÿÿ
+[
+java:S1124#"EReorder the modifiers to comply with the Java Language Specification.(×à¹®
+N	java:S106u"9Replace this use of System.out or System.err by a logger.(ÜøñÜ
+9
+java:S5542{"#Use secure mode and padding scheme.(É©ü
+N	java:S106…"9Replace this use of System.out or System.err by a logger.(¾ó¿[
+:
+java:S5542‘"#Use secure mode and padding scheme.(É©ü
+W	java:S125˜"<This block of commented-out lines of code should be removed.(ÂüõŞşÿÿÿÿ
+^	java:S125"<This block of commented-out lines of code should be removed.(éØ»Úûÿÿÿÿ8ƒîïØ˜0
+T	java:S106£"9Replace this use of System.out or System.err by a logger.(¹Ú™øıÿÿÿÿ
+N	java:S106½"9Replace this use of System.out or System.err by a logger.(°¶±j
+O	java:S106É"9Replace this use of System.out or System.err by a logger.(ÜÃş
+T	java:S106Ú"9Replace this use of System.out or System.err by a logger.(ˆÎ¯øÿÿÿÿ
+O	java:S106ß"9Replace this use of System.out or System.err by a logger.(’Æ…Î
+f
+java:S2095š"OUse try-with-resources or close this "ObjectInputStream" in a "finally" clause.(½ÂÆì
+o
+java:S2095”"QUse try-with-resources or close this "BufferedInputStream" in a "finally" clause.(§µ˜Ü8­¹ïØ˜0
+g
+java:S2095‚"PUse try-with-resources or close this "ObjectOutputStream" in a "finally" clause.(èŠ €

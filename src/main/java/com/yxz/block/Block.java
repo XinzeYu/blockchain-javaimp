@@ -2,6 +2,7 @@ package com.yxz.block;
 
 import com.yxz.consensus.PowResult;
 import com.yxz.consensus.ProofOfWork;
+import com.yxz.transaction.MerkleTree;
 import com.yxz.transaction.Transaction;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -89,4 +90,18 @@ public class Block {
         }
         return DigestUtils.sha256(ByteUtils.merge(txIds));
     }*/
+
+
+    /**
+     * 对区块中的交易信息进行Hash计算，用merkletree表示
+     *
+     * @return
+     */
+    public byte[] hashTransaction() {
+        byte[][] txIdArrays = new byte[this.getTransactions().length][];
+        for (int i = 0; i < this.getTransactions().length; i++) {
+            txIdArrays[i] = this.getTransactions()[i].hash();
+        }
+        return new MerkleTree(txIdArrays).getRoot().getHash();
+    }
 }

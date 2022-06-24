@@ -10,9 +10,9 @@ import java.math.BigInteger;
 public class ProofOfWork {
 
     /**
-     * 难度目标位，按道理应当动态调整
+     * 难度目标位，按道理应当动态调整，为了方便实验把数值调低
      */
-    public static final int TARGET_BITS = 20;
+    public static final int TARGET_BITS = 8;
 
     /**
      * 区块
@@ -62,6 +62,7 @@ public class ProofOfWork {
                 System.out.printf("correct hash Hex: %s \n\n", shaHex);
                 break;
             } else {
+                //System.out.println(nonce + "\n");
                 nonce++;
             }
         }
@@ -86,7 +87,7 @@ public class ProofOfWork {
      */
     private String prepareData(long nonce) {
         return this.getBlock().getPreHash() +
-                this.getBlock().getTransactions() + this.getBlock().getTimeStamp() + TARGET_BITS + nonce;
+                this.getBlock().hashTransaction() + this.getBlock().getTimeStamp() + TARGET_BITS + nonce;
     }
 
 
